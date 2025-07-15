@@ -1,5 +1,6 @@
 import { CrawlQueue } from './crawler/queue.js';
 export { CrawlQueue } from './crawler/queue.js';
+import { createToolFunction } from '@just-every/ensemble';
 /**
  * Fetch a URL and convert it to markdown
  * @param url - The URL to fetch
@@ -27,5 +28,20 @@ export async function fetchMarkdown(url, options = {}) {
         throw new Error(result.error);
     }
     return result.markdown;
+}
+export function getCrawlTools() {
+    return [
+        createToolFunction((url, depth) => fetch(url, { depth }), 'Quickly fetch a URL and convert it to markdown', {
+            url: {
+                type: 'string',
+                description: 'Starting URL',
+            },
+            depth: {
+                type: 'number',
+                description: 'How many pages to crawl (default: 1)',
+                optional: true,
+            },
+        }, undefined, 'web_fetch'),
+    ];
 }
 //# sourceMappingURL=index.js.map

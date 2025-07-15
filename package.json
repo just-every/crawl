@@ -33,6 +33,7 @@
   "author": "Just Every",
   "license": "MIT",
   "dependencies": {
+    "@just-every/ensemble": "^0.2.140",
     "@mozilla/readability": "^0.6.0",
     "commander": "^14.0.0",
     "jsdom": "^26.1.0",
