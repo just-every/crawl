@@ -1,41 +1,58 @@
 {
-  "name": "@just-every/search",
-  "version": "1.0.8",
-  "description": "Search every provider at once - Google, Anthropic, OpenAI, Perplexity, X.AI and Brave.",
+  "name": "@just-every/crawl",
+  "version": "1.0.0",
+  "description": "Fast, token-efficient web content extraction - fetch web pages and convert to clean Markdown",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "bin": {
-    "web-search": "./dist/cli.js"
+    "web-crawl": "./dist/cli.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/just-every/search.git"
+    "url": "git+https://github.com/just-every/crawl.git"
   },
-  "homepage": "https://github.com/just-every/search#readme",
+  "homepage": "https://github.com/just-every/crawl#readme",
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/cli.ts",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "web",
-    "search",
-    "magi"
+    "crawl",
+    "crawler",
+    "markdown",
+    "scraper",
+    "readability",
+    "content-extraction",
+    "llm",
+    "rag"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Just Every",
+  "license": "MIT",
   "dependencies": {
-    "@just-every/ensemble": "^0.2.35",
-    "@just-every/task": "^0.2.12",
-    "axios": "^1.7.9",
+    "@mozilla/readability": "^0.6.0",
+    "commander": "^14.0.0",
+    "jsdom": "^26.1.0",
+    "p-limit": "^6.2.0",
+    "robots-parser": "^3.0.1",
+    "turndown": "^7.1.3",
+    "turndown-plugin-gfm": "^1.0.2",
+    "undici": "^7.10.0",
     "yargs": "^18.0.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.10",
+    "@types/jsdom": "^21.1.6",
+    "@types/node": "^24.0.0",
+    "@types/turndown": "^5.0.4",
     "@types/yargs": "^17.0.33",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "files": [
     "dist"

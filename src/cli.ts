@@ -1,143 +1,149 @@
 #!/usr/bin/env node
 
-import 'dotenv/config';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { web_search, web_search_task } from './index.js';
-
-function isImageQuery(query: string): boolean {
-    const imageKeywords = [
-        'image', 'images', 'photo', 'photos', 'picture', 'pictures', 'pic', 'pics',
-        'logo', 'logos', 'icon', 'icons', 'screenshot', 'screenshots',
-        'jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp',
-        'wallpaper', 'wallpapers', 'background', 'backgrounds',
-        'thumbnail', 'thumbnails', 'avatar', 'avatars'
-    ];
-    
-    const lowerQuery = query.toLowerCase();
-    return imageKeywords.some(keyword => lowerQuery.includes(keyword));
-}
+import { fetch } from './index.js';
+import { CrawlOptions } from './types.js';
 
 const argv = yargs(hideBin(process.argv))
     .command(
-        '$0 <query>',
-        'Search the web using various search engines',
+        '$0 <url>',
+        'Fetch a URL and convert to Markdown',
         (yargs) => {
             return yargs
-                .positional('query', {
-                    describe: 'The search query',
+                .positional('url', {
+                    describe: 'The URL to fetch',
                     type: 'string',
                     demandOption: true,
                 })
-                .option('engine', {
-                    alias: 'e',
-                    describe: 'Search engine to use',
-                    type: 'string',
-                    choices: ['brave', 'brave-images', 'anthropic', 'openai', 'google', 'sonar', 'sonar-pro', 'sonar-deep-research', 'xai'],
-                    default: 'brave',
-                })
-                .option('results', {
-                    alias: 'n',
-                    describe: 'Number of results to return',
+                .option('depth', {
+                    alias: 'd',
+                    describe: 'Crawl depth (0 = single page)',
                     type: 'number',
-                    default: 5,
+                    default: 0,
                 })
-                .option('json', {
-                    alias: 'j',
-                    describe: 'Output raw JSON',
+                .option('concurrency', {
+                    alias: 'c',
+                    describe: 'Max concurrent requests',
+                    type: 'number',
+                    default: 3,
+                })
+                .option('robots', {
+                    describe: 'Respect robots.txt',
+                    type: 'boolean',
+                    default: true,
+                })
+                .option('all-origins', {
+                    describe: 'Allow cross-origin crawling',
                     type: 'boolean',
                     default: false,
+                })
+                .option('user-agent', {
+                    alias: 'u',
+                    describe: 'Custom user agent',
+                    type: 'string',
+                })
+                .option('cache-dir', {
+                    describe: 'Cache directory',
+                    type: 'string',
+                    default: '.cache',
+                })
+                .option('timeout', {
+                    alias: 't',
+                    describe: 'Request timeout in milliseconds',
+                    type: 'number',
+                    default: 30000,
+                })
+                .option('output', {
+                    alias: 'o',
+                    describe: 'Output format',
+                    type: 'string',
+                    choices: ['json', 'markdown', 'both'],
+                    default: 'markdown',
                 });
         },
         async (argv) => {
             try {
-                let engine = argv.engine as string;
-                
-                // Auto-detect image queries and suggest brave-images if using brave
-                if (engine === 'brave' && isImageQuery(argv.query as string)) {
-                    console.log(`🔍 Detected image query. Consider using --engine brave-images for better results.\n`);
-                }
-                
-                // CLI doesn't use inject_agent_id, so we use the backward-compatible signature
-                const result = await web_search(
-                    engine,
-                    argv.query as string,
-                    argv.results as number
-                );
+                const crawlOptions: CrawlOptions = {
+                    depth: argv.depth,
+                    maxConcurrency: argv.concurrency,
+                    respectRobots: argv.robots,
+                    sameOriginOnly: !argv.allOrigins,
+                    userAgent: argv.userAgent,
+                    cacheDir: argv.cacheDir,
+                    timeout: argv.timeout,
+                };
 
-                if (argv.json) {
-                    console.log(result);
-                } else {
-                    if (result.startsWith('Error:')) {
-                        console.error(result);
-                        process.exit(1);
-                    }
+                console.error(`Fetching ${argv.url}...`);
+                const results = await fetch(argv.url as string, crawlOptions);
 
-                    try {
-                        const results = JSON.parse(result);
-                        console.log(`\nSearch results for: "${argv.query}"\n`);
-                        results.forEach((item: any, index: number) => {
-                            console.log(`${index + 1}. ${item.title}`);
-                            console.log(`   ${item.url}`);
-                            
-                            // Handle image results
-                            if (item.thumbnail && item.source) {
-                                console.log(`   Source: ${item.source}`);
-                                console.log(`   Thumbnail: ${item.thumbnail}`);
-                                if (item.width && item.height) {
-                                    console.log(`   Dimensions: ${item.width}x${item.height}`);
-                                }
-                            } else if (item.snippet) {
-                                console.log(`   ${item.snippet}`);
+                if (argv.output === 'json') {
+                    console.log(JSON.stringify(results, null, 2));
+                } else if (argv.output === 'markdown') {
+                    results.forEach(result => {
+                        // Always output markdown if we have it, even with errors
+                        if (result.markdown) {
+                            console.log(result.markdown);
+                            if (results.length > 1) {
+                                console.log('\n---\n'); // Separator between multiple pages
                             }
-                            console.log();
-                        });
-                    } catch (e) {
-                        console.log(result);
-                    }
+                        }
+                        // Show error as warning if we also have content
+                        if (result.error && result.markdown) {
+                            console.error(
+                                `Warning for ${result.url}: ${result.error}`
+                            );
+                        } else if (result.error && !result.markdown) {
+                            console.error(
+                                `Error for ${result.url}: ${result.error}`
+                            );
+                        }
+                    });
+                } else if (argv.output === 'both') {
+                    results.forEach(result => {
+                        console.log(`\n## URL: ${result.url}\n`);
+                        if (result.markdown) {
+                            console.log(result.markdown);
+                        }
+                        if (result.error) {
+                            console.error(
+                                `${result.markdown ? 'Warning' : 'Error'}: ${result.error}`
+                            );
+                        }
+                    });
+                }
+
+                // Exit with error only if we have errors without content
+                const hasFatalErrors = results.some(r => r.error && !r.markdown);
+                if (hasFatalErrors) {
+                    process.exit(1);
                 }
             } catch (error) {
-                console.error('Search failed:', error);
+                console.error(
+                    'Error:',
+                    error instanceof Error ? error.message : error
+                );
                 process.exit(1);
             }
         }
     )
     .command(
-        'task <query>',
-        'Run comprehensive research using web_search_task',
+        'clear-cache',
+        'Clear the cache directory',
         (yargs) => {
-            return yargs
-                .positional('query', {
-                    describe: 'The research query',
-                    type: 'string',
-                    demandOption: true,
-                })
-                .option('model-class', {
-                    alias: 'm',
-                    describe: 'Model class to use',
-                    type: 'string',
-                    choices: ['standard', 'mini', 'reasoning', 'reasoning_mini', 'monologue', 'metacognition', 'code', 'writing', 'summary', 'vision', 'vision_mini',  'image_generation', 'embedding', 'voice'],
-                    default: 'reasoning_mini',
-                });
+            return yargs.option('cache-dir', {
+                describe: 'Cache directory',
+                type: 'string',
+                default: '.cache',
+            });
         },
         async (argv) => {
             try {
-                console.log(`Running comprehensive research on: "${argv.query}"\n`);
-                console.log(`Using model class: ${argv.modelClass}\n`);
-                
-                const result = await web_search_task(
-                    argv.query as string,
-                    argv.modelClass as any
-                );
-
-                if (result.startsWith('Error:')) {
-                    console.error(result);
-                    process.exit(1);
-                }
-
-                console.log(result);
+                const { rm } = await import('fs/promises');
+                await rm(argv.cacheDir, { recursive: true, force: true });
+                console.log(`Cache cleared: ${argv.cacheDir}`);
             } catch (error) {
-                console.error('Research task failed:', error);
+                console.error('Error clearing cache:', error);
                 process.exit(1);
             }
         }

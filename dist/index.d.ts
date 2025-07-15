@@ -1,19 +1,18 @@
-import { ToolFunction } from '@just-every/ensemble';
-export interface SearchResult {
-    title: string;
-    url: string;
-    snippet: string;
-}
-export interface ImageSearchResult {
-    title: string;
-    url: string;
-    thumbnail: string;
-    source: string;
-    width?: number;
-    height?: number;
-}
-export declare function web_search(engine: string, query: string, numResults?: number): Promise<string>;
-export declare function web_search(inject_agent_id: string | null, engine: string, query: string, numResults?: number): Promise<string>;
-export declare function web_search_task(query: string, modelClass?: 'standard' | 'mini' | 'reasoning' | 'reasoning_mini' | 'monologue' | 'metacognition' | 'code' | 'writing' | 'summary' | 'vision' | 'vision_mini' | 'image_generation' | 'embedding' | 'voice'): Promise<string>;
-export declare function getSearchTools(): ToolFunction[];
+import { CrawlOptions, CrawlResult } from './types.js';
+export type { CrawlOptions, CrawlResult, Article, CacheEntry } from './types.js';
+export { CrawlQueue } from './crawler/queue.js';
+/**
+ * Fetch a URL and convert it to markdown
+ * @param url - The URL to fetch
+ * @param options - Crawling options
+ * @returns Promise with crawl results
+ */
+export declare function fetch(url: string, options?: CrawlOptions): Promise<CrawlResult[]>;
+/**
+ * Fetch a single URL and return only the markdown content
+ * @param url - The URL to fetch
+ * @param options - Crawling options
+ * @returns Promise with markdown string
+ */
+export declare function fetchMarkdown(url: string, options?: CrawlOptions): Promise<string>;
 //# sourceMappingURL=index.d.ts.map

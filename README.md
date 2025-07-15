@@ -1,101 +1,132 @@
-# @just-every/search
+# @just-every/crawl
 
-Search every provider at once - Google, Anthropic, OpenAI, Perplexity, X.AI and Brave.
+Fast, token-efficient web content extraction - fetch web pages and convert to clean Markdown. Perfect for LLMs to read data from web pages quickly and efficiently.
+
+## Features
+
+- 🚀 Fast HTML to Markdown conversion
+- 📄 Clean, readable markdown output
+- 🤖 Respects robots.txt by default
+- 💾 Built-in caching for repeated requests
+- 🔄 Multi-page crawling with depth control
+- 🎯 Smart content extraction using Mozilla's Readability
+- ⚡ Concurrent fetching with configurable limits
+- 🔗 Automatic relative URL resolution
 
 ## Installation
 
 ```bash
-npm install @just-every/search
+npm install @just-every/crawl
 ```
 
 ## Usage
 
-### As a library
-
-```typescript
-import { web_search } from '@just-every/search';
-
-// Basic usage (backward compatible)
-const results = await web_search('brave', 'your search query', 5);
-
-// With agent tracking (for MAGI system)
-const results = await web_search('agent-id', 'brave', 'your search query', 5);
-```
-
-### CLI Usage
+### Command Line
 
 ```bash
-# Install globally
-npm install -g @just-every/search
+# Fetch a single page
+npx web-crawl https://example.com
 
-# Search with Brave (default)
-web-search "your search query"
+# Crawl with depth
+npx web-crawl https://example.com --depth 2 --concurrency 5
 
-# Use a specific engine
-web-search "your search query" -e anthropic
+# Output as JSON
+npx web-crawl https://example.com --output json
 
-# Get more results
-web-search "your search query" -n 10
-
-# Output raw JSON
-web-search "your search query" --json
-
-# Run comprehensive research with AI agents
-web-search task "your research query"
-
-# Use a specific model class for research
-web-search task "your research query" -m reasoning
-
-# Available model classes: standard, mini, reasoning, reasoning_mini (default),
-# monologue, metacognition, code, writing, summary, vision, vision_mini,
-# search, image_generation, embedding, voice
+# Custom user agent and timeout
+npx web-crawl https://example.com --user-agent "MyBot/1.0" --timeout 60000
 ```
 
-## Available Search Engines
+### Programmatic API
 
-- `brave` - Privacy-first search using Brave's independent index
-- `anthropic` - Deep multi-hop research with strong source citations (requires ANTHROPIC_API_KEY)
-- `openai` - ChatGPT-grade contextual search (requires OPENAI_API_KEY)
-- `google` - Fresh breaking-news facts via Gemini grounding (requires GOOGLE_API_KEY)
-- `sonar` - Lightweight Perplexity search (requires OPENROUTER_API_KEY)
-- `sonar-pro` - Advanced Perplexity search (requires OPENROUTER_API_KEY)
-- `sonar-deep-research` - Expert-level Perplexity research (requires OPENROUTER_API_KEY)
-- `xai` - Real-time web search via Grok (requires XAI_API_KEY)
+```javascript
+import { fetch, fetchMarkdown } from '@just-every/crawl';
 
-## Environment Variables
+// Fetch and convert a single URL to markdown
+const markdown = await fetchMarkdown('https://example.com');
+console.log(markdown);
 
-Set the following environment variables for the search engines you want to use:
+// Fetch with options
+const results = await fetch('https://example.com', {
+    depth: 2,              // Crawl depth (0 = single page)
+    maxConcurrency: 5,     // Max concurrent requests
+    respectRobots: true,   // Respect robots.txt
+    sameOriginOnly: true,  // Only crawl same origin
+    userAgent: 'MyBot/1.0',
+    cacheDir: '.cache',
+    timeout: 30000         // Request timeout in ms
+});
 
-- `BRAVE_API_KEY` - For Brave search
-- `ANTHROPIC_API_KEY` - For Anthropic search
-- `OPENAI_API_KEY` - For OpenAI search
-- `GOOGLE_API_KEY` - For Google search
-- `OPENROUTER_API_KEY` - For Perplexity searches
-- `XAI_API_KEY` - For X.AI search
+// Process results
+results.forEach(result => {
+    if (result.error) {
+        console.error(`Error for ${result.url}: ${result.error}`);
+    } else {
+        console.log(`# ${result.title}`);
+        console.log(result.markdown);
+    }
+});
+```
 
-## API
+## CLI Options
 
-### `web_search(engine, query, numResults?)`
-### `web_search(inject_agent_id, engine, query, numResults?)`
+```
+Options:
+  -d, --depth <number>      Crawl depth (0 = single page) (default: 0)
+  -c, --concurrency <n>     Max concurrent requests (default: 3)
+  --no-robots               Ignore robots.txt
+  --all-origins             Allow cross-origin crawling
+  -u, --user-agent <agent>  Custom user agent
+  --cache-dir <path>        Cache directory (default: ".cache")
+  -t, --timeout <ms>        Request timeout in milliseconds (default: 30000)
+  -o, --output <format>     Output format: json, markdown, or both (default: "markdown")
+  -h, --help                Display help
+```
 
-Performs a web search using the specified engine.
+## API Reference
 
-- `inject_agent_id` (optional) - Agent ID for tracking in MAGI system
-- `engine` - Search engine to use
-- `query` - Search query string
-- `numResults` - Number of results to return (default: 5)
+### `fetch(url, options)`
 
-Returns a JSON string containing search results.
+Fetches a URL and returns an array of crawl results.
 
-### `web_search_task(query, modelClass?)`
+**Parameters:**
+- `url` (string): The URL to fetch
+- `options` (CrawlOptions): Optional crawling configuration
 
-Runs comprehensive research using multiple search engines in parallel with AI agents.
+**Returns:** `Promise<CrawlResult[]>`
 
-- `query` - Research query string
-- `modelClass` - Model class to use (default: 'reasoning_mini')
+### `fetchMarkdown(url, options)`
 
-Returns a comprehensive research report as a string.
+Fetches a single URL and returns only the markdown content.
 
-### `getSearchTools()`
+**Parameters:**
+- `url` (string): The URL to fetch
+- `options` (CrawlOptions): Optional crawling configuration
 
-Returns an array of ToolFunction definitions for use with the MAGI agent system.
+**Returns:** `Promise<string>`
+
+### Types
+
+```typescript
+interface CrawlOptions {
+    depth?: number;           // Crawl depth (0 = single page)
+    maxConcurrency?: number;  // Max concurrent requests
+    respectRobots?: boolean;  // Respect robots.txt
+    sameOriginOnly?: boolean; // Only crawl same origin
+    userAgent?: string;       // Custom user agent
+    cacheDir?: string;        // Cache directory
+    timeout?: number;         // Request timeout in ms
+}
+
+interface CrawlResult {
+    url: string;             // The URL that was crawled
+    markdown: string;        // Converted markdown content
+    title?: string;          // Page title
+    links?: string[];        // Extracted links (if depth > 0)
+    error?: string;          // Error message if failed
+}
+```
+
+## License
+
+MIT
