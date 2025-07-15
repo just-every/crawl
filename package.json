@@ -1,6 +1,6 @@
 {
   "name": "@just-every/crawl",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Fast, token-efficient web content extraction - fetch web pages and convert to clean Markdown",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
