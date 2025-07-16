@@ -40,8 +40,13 @@ export async function fetchMarkdown(url: string, options: CrawlOptions = {}): Pr
 export function getCrawlTools(): ToolFunction[] {
     return [
         createToolFunction(
-            (url: string, depth?: number) => 
-                fetch(url, { depth }),
+            async (url: string, depth?: number) => {
+                const results = await fetch(url, { depth });
+                return results
+                    .filter(result => !result.error && result.markdown)
+                    .map(result => result.markdown)
+                    .join('\n\n---\n\n');
+            },
             'Quickly fetch a URL and convert it to markdown',
             {
                 url: {
