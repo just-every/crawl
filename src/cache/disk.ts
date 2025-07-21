@@ -16,7 +16,10 @@ export class DiskCache {
             await mkdir(this.cacheDir, { recursive: true });
         } catch (error) {
             // If we can't create the cache directory, disable caching
-            console.warn(`Cache directory creation failed: ${error instanceof Error ? error.message : 'Unknown error'}. Caching will be disabled.`);
+            // Only show warning in debug mode or when explicitly requested
+            if (process.env.DEBUG || process.env.CRAWL_DEBUG) {
+                console.warn(`Cache directory creation failed: ${error instanceof Error ? error.message : 'Unknown error'}. Caching will be disabled.`);
+            }
             this.cacheEnabled = false;
         }
     }
@@ -67,8 +70,10 @@ export class DiskCache {
         try {
             await writeFile(path, JSON.stringify(entry, null, 2));
         } catch (error) {
-            // Silently fail if we can't write to cache
-            console.warn(`Failed to write to cache: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            // Only show warning in debug mode
+            if (process.env.DEBUG || process.env.CRAWL_DEBUG) {
+                console.warn(`Failed to write to cache: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
         }
     }
 
