@@ -5,13 +5,20 @@ import { CacheEntry } from '../types.js';
 
 export class DiskCache {
     private cacheDir: string;
+    private cacheEnabled: boolean = true;
 
     constructor(cacheDir: string = '.cache') {
         this.cacheDir = cacheDir;
     }
 
     async init(): Promise<void> {
-        await mkdir(this.cacheDir, { recursive: true });
+        try {
+            await mkdir(this.cacheDir, { recursive: true });
+        } catch (error) {
+            // If we can't create the cache directory, disable caching
+            console.warn(`Cache directory creation failed: ${error instanceof Error ? error.message : 'Unknown error'}. Caching will be disabled.`);
+            this.cacheEnabled = false;
+        }
     }
 
     private getCacheKey(url: string): string {
@@ -24,6 +31,8 @@ export class DiskCache {
     }
 
     async has(url: string): Promise<boolean> {
+        if (!this.cacheEnabled) return false;
+        
         try {
             await access(this.getCachePath(url));
             return true;
@@ -33,6 +42,8 @@ export class DiskCache {
     }
 
     async get(url: string): Promise<CacheEntry | null> {
+        if (!this.cacheEnabled) return null;
+        
         try {
             const path = this.getCachePath(url);
             const data = await readFile(path, 'utf-8');
@@ -43,6 +54,8 @@ export class DiskCache {
     }
 
     async put(url: string, markdown: string, title?: string): Promise<void> {
+        if (!this.cacheEnabled) return;
+        
         const entry: CacheEntry = {
             url,
             markdown,
@@ -51,7 +64,12 @@ export class DiskCache {
         };
 
         const path = this.getCachePath(url);
-        await writeFile(path, JSON.stringify(entry, null, 2));
+        try {
+            await writeFile(path, JSON.stringify(entry, null, 2));
+        } catch (error) {
+            // Silently fail if we can't write to cache
+            console.warn(`Failed to write to cache: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
     }
 
     async getAge(url: string): Promise<number | null> {

@@ -31,7 +31,13 @@ export async function fetchMarkdown(url, options = {}) {
 }
 export function getCrawlTools() {
     return [
-        createToolFunction((url, depth) => fetch(url, { depth }), 'Quickly fetch a URL and convert it to markdown', {
+        createToolFunction(async (url, depth) => {
+            const results = await fetch(url, { depth });
+            return results
+                .filter(result => !result.error && result.markdown)
+                .map(result => result.markdown)
+                .join('\n\n---\n\n');
+        }, 'Quickly fetch a URL and convert it to markdown', {
             url: {
                 type: 'string',
                 description: 'Starting URL',
