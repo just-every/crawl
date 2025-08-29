@@ -3,6 +3,7 @@ import { CrawlOptions, CrawlResult } from '../types.js';
 import { normalizeUrl, isSameOrigin } from '../cache/normalize.js';
 import { DiskCache } from '../cache/disk.js';
 import { fetchStream, isValidUrl } from './fetch.js';
+import { parseNetscapeCookieFile, buildCookieHeaderForUrl, type CookieEntry } from './cookies.js';
 import { isAllowedByRobots, getCrawlDelay } from './robots.js';
 import { htmlToDom, extractLinks } from '../parser/dom.js';
 import { extractArticle } from '../parser/article.js';
@@ -13,8 +14,9 @@ export class CrawlQueue {
     private queue: string[] = [];
     private limit: ReturnType<typeof pLimit>;
     private cache: DiskCache;
-    private options: Required<CrawlOptions>;
+    private options: Required<Omit<CrawlOptions, 'cookieHeader' | 'cookiesFile'>> & Pick<CrawlOptions, 'cookieHeader' | 'cookiesFile'>;
     private results: CrawlResult[] = [];
+    private cookieJar?: CookieEntry[];
 
     constructor(options: CrawlOptions = {}) {
         this.options = {
@@ -25,10 +27,21 @@ export class CrawlQueue {
             userAgent: options.userAgent ?? 'MCP/0.1',
             cacheDir: options.cacheDir ?? '.cache',
             timeout: options.timeout ?? 30000,
+            cookieHeader: options.cookieHeader,
+            cookiesFile: options.cookiesFile,
         };
 
         this.limit = pLimit(this.options.maxConcurrency);
         this.cache = new DiskCache(this.options.cacheDir);
+        // Load cookies file once if provided
+        if (options.cookiesFile) {
+            try {
+                this.cookieJar = parseNetscapeCookieFile(options.cookiesFile);
+            } catch {
+                // Ignore cookie file errors and proceed without cookies
+                this.cookieJar = undefined;
+            }
+        }
     }
 
     async init(): Promise<void> {
@@ -110,9 +123,11 @@ export class CrawlQueue {
             }
 
             // Fetch and parse
+            const cookieHeader = this.options.cookieHeader || (this.cookieJar ? buildCookieHeaderForUrl(normalizedUrl, this.cookieJar) : undefined);
             const html = await fetchStream(normalizedUrl, {
                 userAgent: this.options.userAgent,
                 timeout: this.options.timeout,
+                cookieHeader,
             });
 
             // Check if we got valid HTML

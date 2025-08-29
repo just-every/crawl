@@ -4,6 +4,7 @@ interface FetchOptions {
     userAgent?: string;
     timeout?: number;
     maxRedirections?: number;
+    cookieHeader?: string;
 }
 
 export async function fetchStream(
@@ -25,6 +26,7 @@ export async function fetchStream(
                 DNT: '1',
                 Connection: 'keep-alive',
                 'Upgrade-Insecure-Requests': '1',
+                ...(options.cookieHeader ? { Cookie: options.cookieHeader } : {}),
             },
             redirect: maxRedirections > 0 ? 'follow' : 'manual',
             signal: AbortSignal.timeout(timeout),

@@ -4,14 +4,14 @@ Fast, token-efficient web content extraction - fetch web pages and convert to cl
 
 ## Features
 
-- 🚀 Fast HTML to Markdown conversion
-- 📄 Clean, readable markdown output
-- 🤖 Respects robots.txt by default
-- 💾 Built-in caching for repeated requests
-- 🔄 Multi-page crawling with depth control
-- 🎯 Smart content extraction using Mozilla's Readability
-- ⚡ Concurrent fetching with configurable limits
-- 🔗 Automatic relative URL resolution
+- 🚀 Fast HTML to Markdown conversion using Mozilla's Readability
+- 📄 Clean, readable markdown output optimized for LLMs
+- 🤖 Respects robots.txt (configurable)
+- 💾 Built-in SHA-256 based caching with graceful fallbacks
+- 🔄 Multi-page crawling with intelligent link extraction
+- ⚡ Concurrent fetching with configurable limits (default: 3)
+- 🔗 Automatic relative to absolute URL conversion in markdown
+- 🛡️ Robust error handling and timeout management
 
 ## Installation
 
@@ -27,14 +27,17 @@ npm install @just-every/crawl
 # Fetch a single page
 npx web-crawl https://example.com
 
-# Crawl with depth
-npx web-crawl https://example.com --depth 2 --concurrency 5
+# Crawl multiple pages (specify max pages to crawl)
+npx web-crawl https://example.com --pages 3 --concurrency 5
 
 # Output as JSON
 npx web-crawl https://example.com --output json
 
 # Custom user agent and timeout
 npx web-crawl https://example.com --user-agent "MyBot/1.0" --timeout 60000
+
+# Disable robots.txt checking
+npx web-crawl https://example.com --no-robots
 ```
 
 ### Programmatic API
@@ -46,15 +49,15 @@ import { fetch, fetchMarkdown } from '@just-every/crawl';
 const markdown = await fetchMarkdown('https://example.com');
 console.log(markdown);
 
-// Fetch with options
+// Fetch multiple pages with options
 const results = await fetch('https://example.com', {
-    depth: 2,              // Crawl depth (0 = single page)
-    maxConcurrency: 5,     // Max concurrent requests
-    respectRobots: true,   // Respect robots.txt
-    sameOriginOnly: true,  // Only crawl same origin
+    pages: 3,              // Maximum pages to crawl (default: 1)
+    maxConcurrency: 5,     // Max concurrent requests (default: 3)
+    respectRobots: true,   // Respect robots.txt (default: true)
+    sameOriginOnly: true,  // Only crawl same origin (default: true)
     userAgent: 'MyBot/1.0',
     cacheDir: '.cache',
-    timeout: 30000         // Request timeout in ms
+    timeout: 30000         // Request timeout in ms (default: 30000)
 });
 
 // Process results
@@ -72,7 +75,7 @@ results.forEach(result => {
 
 ```
 Options:
-  -d, --depth <number>      Crawl depth (0 = single page) (default: 0)
+  -p, --pages <number>      Maximum pages to crawl (default: 1)
   -c, --concurrency <n>     Max concurrent requests (default: 3)
   --no-robots               Ignore robots.txt
   --all-origins             Allow cross-origin crawling
@@ -109,20 +112,20 @@ Fetches a single URL and returns only the markdown content.
 
 ```typescript
 interface CrawlOptions {
-    depth?: number;           // Crawl depth (0 = single page)
-    maxConcurrency?: number;  // Max concurrent requests
-    respectRobots?: boolean;  // Respect robots.txt
-    sameOriginOnly?: boolean; // Only crawl same origin
+    pages?: number;           // Maximum pages to crawl (default: 1)
+    maxConcurrency?: number;  // Max concurrent requests (default: 3)
+    respectRobots?: boolean;  // Respect robots.txt (default: true)
+    sameOriginOnly?: boolean; // Only crawl same origin (default: true)
     userAgent?: string;       // Custom user agent
-    cacheDir?: string;        // Cache directory
-    timeout?: number;         // Request timeout in ms
+    cacheDir?: string;        // Cache directory (default: ".cache")
+    timeout?: number;         // Request timeout in ms (default: 30000)
 }
 
 interface CrawlResult {
     url: string;             // The URL that was crawled
     markdown: string;        // Converted markdown content
     title?: string;          // Page title
-    links?: string[];        // Extracted links (if depth > 0)
+    links?: string[];        // Links extracted from markdown content
     error?: string;          // Error message if failed
 }
 ```

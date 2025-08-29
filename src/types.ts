@@ -6,6 +6,11 @@ export interface CrawlOptions {
     userAgent?: string;
     cacheDir?: string;
     timeout?: number;
+    // Optional cookies
+    // Raw Cookie header to send on all requests (advanced override)
+    cookieHeader?: string;
+    // Path to a Netscape cookie file (.txt) used to build Cookie headers per URL
+    cookiesFile?: string;
 }
 
 export interface Article {

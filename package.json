@@ -33,24 +33,24 @@
   "author": "Just Every",
   "license": "MIT",
   "dependencies": {
-    "@just-every/ensemble": "^0.2.140",
+    "@just-every/ensemble": "^0.2.160",
     "@mozilla/readability": "^0.6.0",
     "commander": "^14.0.0",
     "jsdom": "^26.1.0",
-    "p-limit": "^6.2.0",
+    "p-limit": "^7.1.1",
     "robots-parser": "^3.0.1",
-    "turndown": "^7.1.3",
+    "turndown": "^7.2.1",
     "turndown-plugin-gfm": "^1.0.2",
-    "undici": "^7.10.0",
+    "undici": "^7.15.0",
     "yargs": "^18.0.0"
   },
   "devDependencies": {
-    "@types/jsdom": "^21.1.6",
-    "@types/node": "^24.0.0",
-    "@types/turndown": "^5.0.4",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^24.3.0",
+    "@types/turndown": "^5.0.5",
     "@types/yargs": "^17.0.33",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
   },
   "engines": {
     "node": ">=20.0.0"
