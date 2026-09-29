@@ -17,6 +17,7 @@
     "build": "tsc",
     "dev": "tsx src/cli.ts",
     "prepublishOnly": "npm run build",
+    "prepare": "npm run build",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
